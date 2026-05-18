@@ -26,30 +26,30 @@ rain['datetime'] = pd.to_datetime(rain['datetime'])
 rain = rain.sort_values('datetime')
 rain = rain.set_index('datetime')
 
-# # Check spacing
-# full_range = pd.date_range(rain.index.min(), rain.index.max(), freq='h')
-# missing_hours = full_range.difference(rain.index)
+# Check spacing
+full_range = pd.date_range(rain.index.min(), rain.index.max(), freq='h')
+missing_hours = full_range.difference(rain.index)
 
-# print("Total observations:", len(rain))
-# print("Expected hourly timestamps:", len(full_range))
-# print("Missing hours:", len(missing_hours))
+print("Total observations:", len(rain))
+print("Expected hourly timestamps:", len(full_range))
+print("Missing hours:", len(missing_hours))
 
-# # Show first few missing timestamps
-# print(missing_hours[:10])
+# Show first few missing timestamps
+print(missing_hours[:10])
 
-# # Q23
+# Q23
 
-# # F6
-# plt.figure(figsize=(14,5))
-# plt.plot(rain.index, rain['precip_mm'])
-# plt.title('Hourly Precipitation Over Time')
-# plt.xlabel('Date')
-# plt.ylabel('Precipitation (mm)')
-# plt.show()
+# F6
+plt.figure(figsize=(14,5))
+plt.plot(rain.index, rain['precip_mm'])
+plt.title('Hourly Precipitation Over Time')
+plt.xlabel('Date')
+plt.ylabel('Precipitation (mm)')
+plt.show()
 
-# # Q24
+# Q24
 
-# # F7
+# F7
 
 # Aggregate to daily totals
 rain_daily = rain['precip_mm'].resample('D').sum()
@@ -64,23 +64,23 @@ plt.show()
 # Use daily series for decomposition
 rain_daily = rain_daily.fillna(0)
 
-# # Decompose using weekly seasonality
-# result = seasonal_decompose(rain_daily, model='additive', period=7)
+# Decompose using weekly seasonality
+result = seasonal_decompose(rain_daily, model='additive', period=7)
 
-# result.plot()
-# plt.show()
+result.plot()
+plt.show()
 
-# # ACF Plot
-# plt.figure(figsize=(10,5))
-# plot_acf(rain_daily, lags=30)
-# plt.title("ACF of Daily Precipitation")
-# plt.show()
+# ACF Plot
+plt.figure(figsize=(10,5))
+plot_acf(rain_daily, lags=30)
+plt.title("ACF of Daily Precipitation")
+plt.show()
 
-# # PACF Plot
-# plt.figure(figsize=(10,5))
-# plot_pacf(rain_daily, lags=30)
-# plt.title("PACF of Daily Precipitation")
-# plt.show()
+# PACF Plot
+plt.figure(figsize=(10,5))
+plot_pacf(rain_daily, lags=30)
+plt.title("PACF of Daily Precipitation")
+plt.show()
 
 # Log transform to reduce skewness
 rain_log = np.log1p(rain_daily)
