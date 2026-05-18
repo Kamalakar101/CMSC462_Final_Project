@@ -11,11 +11,15 @@ from scipy.stats import ttest_ind
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (confusion_matrix, accuracy_score, roc_curve, roc_auc_score)
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 
 
 
 df1 = pd.read_csv("clean_daily_weather.csv")
-df2 = pd.read_csv("rain_hourly_clean.csv")
 
 
 # # Q4 Checking for duplicate date values
@@ -175,40 +179,180 @@ df1["wind_gust_ratio"] = df1["WSF5"] / df1["AWND"]
 # print("Correlation:", corr)
 # print("95% CI:", (ci_lower, ci_upper))
 
-# Q16
+# # Q16
 
-# Predictors
-predictors = ["TMIN", "AWND", "rain_day", "wind_gust_ratio"]
+# # Predictors
+# predictors = ["TMIN", "AWND", "rain_day", "wind_gust_ratio"]
 
-# Remove missing values
-data = df1[predictors + ["TMAX"]].dropna()
+# # Remove missing values
+# data = df1[predictors + ["TMAX"]].dropna()
 
-X = data[predictors]
-y = data["TMAX"]
+# X = data[predictors]
+# y = data["TMAX"]
 
-# Train/test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# # Train/test split
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Fit model
-model = LinearRegression()
-model.fit(X_train, y_train)
+# # Fit model
+# model = LinearRegression()
+# model.fit(X_train, y_train)
 
-# Predictions
-y_pred = model.predict(X_test)
+# # Predictions
+# y_pred = model.predict(X_test)
 
-# Metrics
-rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-mae = mean_absolute_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
+# # Metrics
+# rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+# mae = mean_absolute_error(y_test, y_pred)
+# r2 = r2_score(y_test, y_pred)
 
-# Print coefficients
-print("Intercept:", model.intercept_)
+# # Print coefficients
+# print("Intercept:", model.intercept_)
 
-for feature, coef in zip(predictors, model.coef_):
-    print(feature, ":", coef)
+# for feature, coef in zip(predictors, model.coef_):
+#     print(feature, ":", coef)
 
-# Q17
+# # Q17
 
-print("\nRMSE:", rmse)
-print("MAE:", mae)
-print("R^2:", r2)
+# print("\nRMSE:", rmse)
+# print("MAE:", mae)
+# print("R^2:", r2)
+
+# # Q19
+
+# # Predictors
+# predictors = ["TAVG", "temp_range", "AWND", "wind_gust_ratio"]
+
+# # Remove missing values
+# data = df1[predictors + ["rain_day"]].dropna()
+
+# X = data[predictors]
+# y = data["rain_day"]
+
+# # Train/test split
+# X_train, X_test, y_train, y_test = train_test_split(
+#     X, y,
+#     test_size=0.2,
+#     random_state=42
+# )
+
+# # Fit logistic regression
+# model = LogisticRegression(max_iter=1000)
+# model.fit(X_train, y_train)
+
+# # Predictions
+# y_pred = model.predict(X_test)
+
+# # Predicted probabilities
+# y_prob = model.predict_proba(X_test)[:, 1]
+
+# # Q20
+
+# cm = confusion_matrix(y_test, y_pred)
+
+# print("Confusion Matrix:")
+# print(cm)
+
+# # Accuracy
+# accuracy = accuracy_score(y_test, y_pred)
+
+# print("\nAccuracy:", accuracy)
+
+# # ROC values
+# fpr, tpr, thresholds = roc_curve(y_test, y_prob)
+
+# # AUC
+# auc = roc_auc_score(y_test, y_prob)
+
+# print("AUC:", auc)
+
+# # Plot ROC curve
+# plt.figure(figsize=(6,6))
+# plt.plot(fpr, tpr, label=f"AUC = {auc:.3f}")
+# plt.plot([0,1], [0,1], linestyle="--")
+
+# plt.xlabel("False Positive Rate")
+# plt.ylabel("True Positive Rate")
+# plt.title("ROC Curve")
+# plt.legend()
+
+# plt.show()
+
+# for feature, coef in zip(predictors, model.coef_[0]):
+#     print(feature, ":", coef)
+
+# -------------------------
+# Q28: Feature Selection + Scaling
+# -------------------------
+
+# Select features (must include engineered feature)
+cluster_features = ["TAVG", "AWND", "temp_range", "wind_gust_ratio"]
+
+# Drop missing values
+cluster_data = df1[cluster_features].dropna()
+
+# Standardize using z-scores
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(cluster_data)
+
+
+# Q29: K-Means Clustering
+
+# Elbow method to choose k
+inertia = []
+K_range = range(1, 11)
+
+for k in K_range:
+    km = KMeans(n_clusters=k, random_state=42, n_init=10)
+    km.fit(X_scaled)
+    inertia.append(km.inertia_)
+
+plt.figure(figsize=(6,4))
+plt.plot(K_range, inertia, marker='o')
+plt.title("Elbow Method for Optimal k")
+plt.xlabel("Number of clusters (k)")
+plt.ylabel("Inertia")
+plt.show()
+
+# Choose k (based on elbow, usually 3 or 4 for weather patterns)
+k = 2
+
+kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+clusters_km = kmeans.fit_predict(X_scaled)
+
+cluster_data["kmeans_cluster"] = clusters_km
+
+
+# Hierarchical Clustering
+
+linked = linkage(X_scaled, method='ward')
+
+plt.figure(figsize=(10,5))
+dendrogram(linked, truncate_mode='level', p=5)
+plt.title("Hierarchical Clustering Dendrogram")
+plt.xlabel("Samples")
+plt.ylabel("Distance")
+plt.show()
+
+# Cut dendrogram into same k clusters
+clusters_hc = fcluster(linked, k, criterion='maxclust')
+cluster_data["hier_cluster"] = clusters_hc
+
+
+# F8: Scatter Plot of Clusters
+
+plt.figure(figsize=(7,5))
+plt.scatter(cluster_data["TAVG"], cluster_data["AWND"], 
+            c=clusters_km, cmap="viridis", s=20)
+
+plt.title("K-Means Clusters (TAVG vs AWND)")
+plt.xlabel("Average Temperature (TAVG)")
+plt.ylabel("Wind Speed (AWND)")
+plt.show()
+
+# Q30: Cluster Interpretation Support
+
+print("\nCluster Means (K-Means):")
+print(cluster_data.groupby("kmeans_cluster")[cluster_features].mean())
+
+print("\nCluster Sizes:")
+print(cluster_data["kmeans_cluster"].value_counts().sort_index())
